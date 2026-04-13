@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neighborhood Wayfinding Assistant</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef3f8;
+      color: #1f2d3d;
+    }
+    .app {
+      max-width: 430px;
+      margin: 24px auto;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(31,45,61,0.12);
+      overflow: hidden;
+      border: 1px solid #d7e1ec;
+      min-height: 860px;
+      position: relative;
+    }
+    .topbar {
+      background: linear-gradient(135deg, #2d6cdf, #45a6a9);
+      color: white;
+      padding: 18px 20px 16px;
+    }
+    .topbar.small {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 14px;
+    }
+    .back-btn {
+      border: none;
+      background: rgba(255,255,255,0.18);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .screen {
+      display: none;
+      min-height: 860px;
+      background: #fff;
+    }
+    .screen.active { display: block; }
+    .content { padding: 20px; }
+    h1, h2, h3, p { margin-top: 0; }
+    .hero-card, .card {
+      background: #f8fbff;
+      border: 1px solid #dbe7f4;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .hero-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      line-height: 1.15;
+    }
+    .subtext {
+      color: #56667a;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .btn, .secondary-btn, .ghost-btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+      margin-bottom: 10px;
+    }
+    .btn {
+      background: #2d6cdf;
+      color: white;
+    }
+    .btn:hover { background: #2459b7; }
+    .secondary-btn {
+      background: #e9f2ff;
+      color: #2459b7;
+    }
+    .ghost-btn {
+      background: #f4f7fa;
+      color: #33495f;
+      border: 1px solid #d6e1eb;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .pill {
+      border: 1px solid #cdd9e6;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .search-box {
+      background: #fff;
+      border: 1.5px solid #c8d7e6;
+      border-radius: 14px;
+      padding: 14px;
+      width: 100%;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+    .label {
+      font-size: 13px;
+      color: #617284;
+      margin-bottom: 8px;
+      display: block;
+      font-weight: 600;
+    }
+    .list-item {
+      background: white;
+      border: 1px solid #dbe6f2;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .list-item h3 {
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+    .meta {
+      font-size: 13px;
+      color: #607286;
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+    .inline-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .inline-actions button {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .mini-map {
+      margin-top: 10px;
+      background: linear-gradient(180deg, #f8fcff, #eef6f2);
+      border: 1px solid #d8e6ee;
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .map-grid {
+      position: relative;
+      height: 300px;
+      background: #f7fbfd;
+      border-radius: 16px;
+      border: 1px solid #d4e1e9;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .road {
+      position: absolute;
+      background: #d7dee5;
+      border-radius: 999px;
+    }
+    .road.h1 { top: 40px; left: 25px; width: 310px; height: 12px; }
+    .road.h2 { top: 145px; left: 35px; width: 300px; height: 12px; }
+    .road.h3 { top: 240px; left: 25px; width: 310px; height: 12px; }
+    .road.v1 { top: 20px; left: 80px; width: 12px; height: 255px; }
+    .road.v2 { top: 20px; left: 190px; width: 12px; height: 255px; }
+    .road.v3 { top: 20px; left: 300px; width: 12px; height: 255px; }
+    .building {
+      position: absolute;
+      width: 72px;
+      height: 52px;
+      background: #ffffff;
+      border: 2px solid #b9cddd;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #30485f;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .building.active {
+      border-color: #2d6cdf;
+      background: #e9f2ff;
+      box-shadow: 0 8px 18px rgba(45,108,223,0.18);
+    }
+    .b1 { top: 65px; left: 20px; }
+    .b2 { top: 65px; left: 125px; }
+    .b3 { top: 65px; left: 235px; }
+    .b4 { top: 170px; left: 20px; }
+    .b5 { top: 170px; left: 125px; }
+    .b6 { top: 170px; left: 235px; }
+    .gate {
+      position: absolute;
+      bottom: 10px;
+      left: 135px;
+      background: #1d8f72;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .route-line {
+      position: absolute;
+      height: 6px;
+      background: #2d6cdf;
+      border-radius: 999px;
+      opacity: 0;
+      transition: 0.2s ease;
+    }
+    .route-line.show { opacity: 1; }
+    .r1 { bottom: 30px; left: 172px; width: 6px; height: 90px; }
+    .r2 { top: 208px; left: 172px; width: 100px; }
+    .r3 { top: 105px; left: 272px; width: 6px; height: 105px; }
+    .location-note {
+      background: #eef7f2;
+      color: #256752;
+      border: 1px solid #cae6da;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .location-note.show { display: block; }
+    .step-box {
+      background: #f8fbff;
+      border: 1px solid #dce7f4;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .step-number {
+      color: #2d6cdf;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .detail-cell {
+      background: white;
+      border: 1px solid #dae6f2;
+      padding: 14px;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .detail-cell.active {
+      background: #e9f2ff;
+      border-color: #2d6cdf;
+      color: #2459b7;
+    }
+    .feedback-choice {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .feedback-choice button {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      resize: none;
+      border: 1.5px solid #c8d7e6;
+      border-radius: 14px;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    textarea.show { display: block; }
+    .success {
+      display: none;
+      background: #eef8f1;
+      border: 1px solid #cae9d3;
+      color: #226a42;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .success.show { display: block; }
+    .footer-note {
+      font-size: 12px;
+      color: #7a8897;
+      text-align: center;
+      padding: 8px 20px 20px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <section class="screen active" id="home-screen">
+      <div class="topbar">
+        <div class="hero-title">Neighborhood Wayfinding</div>
+        <p class="subtext" style="color: rgba(255,255,255,0.92); margin-bottom: 0;">
+          A visitor-friendly navigation tool for finding buildings, units, and entrances in a residential community.
+        </p>
+      </div>
+      <div class="content">
+        <div class="hero-card">
+          <h2>Welcome</h2>
+          <p class="subtext">
+            This prototype helps first-time visitors quickly search for a location, view the community map, and follow simple directions to the correct building and unit.
+          </p>
+        </div>
+
+        <button class="btn" onclick="goTo('search-screen')">Start Navigation</button>
+        <button class="secondary-btn" onclick="goTo('map-screen'); highlightBuilding('b3'); showRoute();">View Community Map</button>
+        <button class="ghost-btn" onclick="goTo('error-screen')">Help / Contact</button>
+
+        <div class="card">
+          <h3>Core tasks in this prototype</h3>
+          <p class="subtext">1. Search for a building, unit, or office</p>
+          <p class="subtext">2. View the neighborhood map and identify the target location</p>
+          <p class="subtext" style="margin-bottom: 0;">3. Follow step-by-step directions to the destination</p>
+        </div>
+      </div>
+      <div class="footer-note">Digital Prototype Version 1 • Based on the paper prototype for the neighborhood signage/navigation project</div>
+    </section>
+
+    <section class="screen" id="search-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('home-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Search Destination</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Find a building, unit, or office</div>
+        </div>
+      </div>
+      <div class="content">
+        <label class="label" for="searchInput">Search</label>
+        <input id="searchInput" class="search-box" placeholder="Try: Building 3, Unit 2, Management Office" oninput="handleSearchInput()" />
+        <div id="searchSuggestion" class="card" style="display:none;">
+          <h3 style="margin-bottom: 8px;">Suggested match</h3>
+          <p class="subtext" id="suggestionText" style="margin-bottom: 12px;"></p>
+          <button class="btn" onclick="openSuggestedResult()">Use This Result</button>
+        </div>
+
+        <div class="card">
+          <h3>Quick destinations</h3>
+          <div class="pill-row">
+            <button class="pill" onclick="quickSearch('Building 1')">Building 1</button>
+            <button class="pill" onclick="quickSearch('Building 2')">Building 2</button>
+            <button class="pill" onclick="quickSearch('Building 3')">Building 3</button>
+            <button class="pill" onclick="quickSearch('Management Office')">Management Office</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Recent searches</h3>
+          <button class="ghost-btn" onclick="quickSearch('Building 3 Unit 2')">Building 3, Unit 2</button>
+          <button class="ghost-btn" onclick="quickSearch('Management Office')">Management Office</button>
+        </div>
+
+        <div class="mini-map">
+          <h3>Map preview</h3>
+          <p class="subtext" style="margin-bottom: 0;">You are currently near the South Gate entrance.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="results-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('search-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Search Results</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Matching locations in the neighborhood</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="list-item">
+          <h3 id="result-title-1">Building 3, Unit 2</h3>
+          <div class="meta" id="result-meta-1">Near the east walkway. Best entrance is through the south-side path.</div>
+          <div class="inline-actions">
+            <button class="btn" onclick="setDestination('Building 3, Unit 2'); goTo('route-screen');">Navigate</button>
+            <button class="secondary-btn" onclick="setDestination('Building 3, Unit 2'); goTo('map-screen'); highlightBuilding('b3'); showRoute();">View on Map</button>
+          </div>
+        </div>
+
+        <div class="list-item">
+          <h3>Building 3, Unit 1</h3>
+          <div class="meta">Same building, west-side entrance. Close to the main internal road.</div>
+          <div class="inline-actions">
+            <button class="btn" onclick="setDestination('Building 3, Unit 1'); goTo('route-screen');">Navigate</button>
+            <button class="secondary-btn" onclick="setDestination('Building 3, Unit 1'); goTo('map-screen'); highlightBuilding('b3'); showRoute();">View on Map</button>
+          </div>
+        </div>
+
+        <div class="list-item">
+          <h3>Management Office</h3>
+          <div class="meta">Located near Building 1 and close to the gate for easy access.</div>
+          <div class="inline-actions">
+            <button class="btn" onclick="setDestination('Management Office'); goTo('route-screen');">Navigate</button>
+            <button class="secondary-btn" onclick="setDestination('Management Office'); goTo('map-screen'); highlightBuilding('b1'); clearRoute();">View on Map</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="map-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('search-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Community Map</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Tap a building to inspect it</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="location-note" id="locationNote">You are here: South Gate entrance.</div>
+
+        <div class="map-grid">
+          <div class="road h1"></div>
+          <div class="road h2"></div>
+          <div class="road h3"></div>
+          <div class="road v1"></div>
+          <div class="road v2"></div>
+          <div class="road v3"></div>
+
+          <div class="building b1" id="b1" onclick="highlightBuilding('b1')">B1</div>
+          <div class="building b2" id="b2" onclick="highlightBuilding('b2')">B2</div>
+          <div class="building b3" id="b3" onclick="highlightBuilding('b3')">B3</div>
+          <div class="building b4" id="b4" onclick="highlightBuilding('b4')">B4</div>
+          <div class="building b5" id="b5" onclick="highlightBuilding('b5')">B5</div>
+          <div class="building b6" id="b6" onclick="highlightBuilding('b6')">B6</div>
+
+          <div class="route-line r1" id="r1"></div>
+          <div class="route-line r2" id="r2"></div>
+          <div class="route-line r3" id="r3"></div>
+
+          <div class="gate" onclick="toggleLocationNote()">South Gate</div>
+        </div>
+
+        <div class="card">
+          <h3 id="mapTitle">Selected location: Building 3</h3>
+          <p class="subtext" id="mapDescription">Clear numbering and a highlighted destination help visitors understand where to go after entering the neighborhood.</p>
+          <div class="inline-actions">
+            <button class="btn" onclick="goTo('building-screen')">View Details</button>
+            <button class="secondary-btn" onclick="goTo('route-screen')">Route to Here</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="route-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('map-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Route Guidance</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Follow step-by-step directions</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <h3>Destination</h3>
+          <p class="subtext" id="route-destination">Building 3, Unit 2</p>
+        </div>
+
+        <div class="step-box">
+          <div class="step-number" id="stepCounter">Step 1</div>
+          <div id="stepText">Enter from the South Gate and continue straight on the main path.</div>
+        </div>
+
+        <button class="btn" onclick="nextStep()">Next Step</button>
+        <button class="secondary-btn" onclick="goTo('map-screen')">Back to Map</button>
+        <button class="ghost-btn" onclick="goTo('search-screen')">Restart Search</button>
+      </div>
+    </section>
+
+    <section class="screen" id="building-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('map-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Building Details</h2>
+          <div style="font-size: 13px; opacity: 0.9;">A closer look at entrances and units</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <h3 id="buildingTitle">Building 3</h3>
+          <p class="subtext" id="buildingDescription">This building has two units and a clearly marked entrance facing the east-side internal walkway.</p>
+          <div class="detail-grid">
+            <div class="detail-cell" id="unit1" onclick="selectUnit('unit1', 'Unit 1: west-side entrance, closer to the main road.')">Unit 1</div>
+            <div class="detail-cell active" id="unit2" onclick="selectUnit('unit2', 'Unit 2: east-side entrance, recommended for visitors following the highlighted path.')">Unit 2</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Selected unit info</h3>
+          <p class="subtext" id="unitDescription">Unit 2: east-side entrance, recommended for visitors following the highlighted path.</p>
+        </div>
+
+        <button class="btn" onclick="goTo('route-screen')">View Route</button>
+        <button class="secondary-btn" onclick="goTo('feedback-screen')">Leave Feedback</button>
+      </div>
+    </section>
+
+    <section class="screen" id="error-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('home-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Need Help?</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Search support and office contact</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <h3>We couldn’t find that location</h3>
+          <p class="subtext">Try checking the building number, unit number, or resident information. If the signage is still unclear, contact the management office for help.</p>
+        </div>
+
+        <button class="btn" onclick="goTo('search-screen')">Search Again</button>
+        <button class="secondary-btn" onclick="showOfficeContact()">Contact Office</button>
+
+        <div class="success" id="officeContactBox">Management Office: (555) 014-2030 • Open 8:30 AM–6:00 PM</div>
+      </div>
+    </section>
+
+    <section class="screen" id="feedback-screen">
+      <div class="topbar small">
+        <button class="back-btn" onclick="goTo('building-screen')">← Back</button>
+        <div>
+          <h2 style="margin: 0; font-size: 20px;">Feedback</h2>
+          <div style="font-size: 13px; opacity: 0.9;">Help improve the wayfinding system</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <h3>Did this help you find your destination?</h3>
+          <p class="subtext">This screen supports iterative design by collecting feedback from potential users after using the prototype.</p>
+        </div>
+
+        <div class="feedback-choice">
+          <button class="btn" onclick="chooseFeedback('yes')">Yes</button>
+          <button class="secondary-btn" onclick="chooseFeedback('no')">No</button>
+        </div>
+
+        <textarea id="feedbackText" placeholder="Tell us what was unclear or what could be improved."></textarea>
+        <button class="ghost-btn" onclick="submitFeedback()">Submit Feedback</button>
+
+        <div class="success" id="feedbackSuccess">Thanks for your feedback. Your comments can guide the next iteration of the digital prototype.</div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const screens = document.querySelectorAll('.screen');
+    const steps = [
+      'Enter from the South Gate and continue straight on the main path.',
+      'Walk north until you reach the second internal intersection.',
+      'Turn right toward Building 3 on the east-side walkway.',
+      'Continue to the marked entrance for Unit 2.'
+    ];
+    let currentStep = 0;
+
+    function goTo(id) {
+      screens.forEach(screen => screen.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function handleSearchInput() {
+      const input = document.getElementById('searchInput').value.trim().toLowerCase();
+      const suggestion = document.getElementById('searchSuggestion');
+      const text = document.getElementById('suggestionText');
+
+      if (input.includes('3') || input.includes('unit 2') || input.includes('building')) {
+        suggestion.style.display = 'block';
+        text.textContent = 'Building 3, Unit 2 — recommended result for the highlighted neighborhood path.';
+      } else if (input.includes('office') || input.includes('management')) {
+        suggestion.style.display = 'block';
+        text.textContent = 'Management Office — near the South Gate entrance.';
+      } else if (input.length > 0) {
+        suggestion.style.display = 'block';
+        text.textContent = 'No exact match yet. Try Building 3, Unit 2, or Management Office.';
+      } else {
+        suggestion.style.display = 'none';
+      }
+    }
+
+    function openSuggestedResult() {
+      goTo('results-screen');
+    }
+
+    function quickSearch(value) {
+      document.getElementById('searchInput').value = value;
+      goTo('results-screen');
+    }
+
+    function setDestination(destination) {
+      document.getElementById('route-destination').textContent = destination;
+      currentStep = 0;
+      document.getElementById('stepCounter').textContent = 'Step 1';
+      document.getElementById('stepText').textContent = steps[0];
+    }
+
+    function nextStep() {
+      currentStep = (currentStep + 1) % steps.length;
+      document.getElementById('stepCounter').textContent = 'Step ' + (currentStep + 1);
+      document.getElementById('stepText').textContent = steps[currentStep];
+    }
+
+    function highlightBuilding(buildingId) {
+      document.querySelectorAll('.building').forEach(b => b.classList.remove('active'));
+      document.getElementById(buildingId).classList.add('active');
+
+      const mapTitle = document.getElementById('mapTitle');
+      const mapDescription = document.getElementById('mapDescription');
+      const buildingTitle = document.getElementById('buildingTitle');
+      const buildingDescription = document.getElementById('buildingDescription');
+
+      const data = {
+        b1: ['Selected location: Building 1', 'Building 1 is located near the entrance and management office, making it easy for visitors to identify.', 'Building 1', 'This building is closest to the South Gate and is useful as a landmark for first-time visitors.'],
+        b2: ['Selected location: Building 2', 'Building 2 sits at the center of the neighborhood and helps visitors orient themselves before turning.', 'Building 2', 'This building acts as a central reference point in the neighborhood map.'],
+        b3: ['Selected location: Building 3', 'Building 3 is highlighted because it is the main destination in this prototype. It sits near the east walkway.', 'Building 3', 'This building has two units and a clearly marked entrance facing the east-side internal walkway.'],
+        b4: ['Selected location: Building 4', 'Building 4 is positioned in the lower-left area and can be accessed through the south road.', 'Building 4', 'A secondary residential building with a less direct but still visible path.'],
+        b5: ['Selected location: Building 5', 'Building 5 is near the lower middle section and is easier to reach after passing the center road.', 'Building 5', 'This building benefits from clearer numbering and wider paths in the prototype.'],
+        b6: ['Selected location: Building 6', 'Building 6 sits in the lower-right area and demonstrates that the system can support multiple destinations.', 'Building 6', 'This building is used to show how the system scales beyond a single target building.']
+      };
+
+      mapTitle.textContent = data[buildingId][0];
+      mapDescription.textContent = data[buildingId][1];
+      buildingTitle.textContent = data[buildingId][2];
+      buildingDescription.textContent = data[buildingId][3];
+    }
+
+    function toggleLocationNote() {
+      document.getElementById('locationNote').classList.toggle('show');
+    }
+
+    function showRoute() {
+      document.getElementById('r1').classList.add('show');
+      document.getElementById('r2').classList.add('show');
+      document.getElementById('r3').classList.add('show');
+    }
+
+    function clearRoute() {
+      document.getElementById('r1').classList.remove('show');
+      document.getElementById('r2').classList.remove('show');
+      document.getElementById('r3').classList.remove('show');
+    }
+
+    function selectUnit(id, description) {
+      document.querySelectorAll('.detail-cell').forEach(cell => cell.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('unitDescription').textContent = description;
+    }
+
+    function showOfficeContact() {
+      document.getElementById('officeContactBox').classList.add('show');
+    }
+
+    function chooseFeedback(choice) {
+      const textarea = document.getElementById('feedbackText');
+      const success = document.getElementById('feedbackSuccess');
+      success.classList.remove('show');
+      if (choice === 'no') {
+        textarea.classList.add('show');
+        textarea.placeholder = 'Tell us what was confusing or difficult to use.';
+      } else {
+        textarea.classList.remove('show');
+      }
+    }
+
+    function submitFeedback() {
+      document.getElementById('feedbackSuccess').classList.add('show');
+    }
+
+    highlightBuilding('b3');
+    setDestination('Building 3, Unit 2');
+    showRoute();
+  </script>
+</body>
+</html>
